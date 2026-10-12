@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misi Penyelamat Kota: Asesmen Berbalik Nilai</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#1d2740;--mu:#5d6b8a;--pr:#5b4bdb;--ac:#ff8a3d;--ok:#16a34a;--no:#dc2626;--bd:#e1e7f2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12172b;--card:#1c2340;--tx:#eef1ff;--mu:#a0abcc;--bd:#2d3659;--pr:#8b7fff}}
+:root[data-theme="dark"]{--bg:#12172b;--card:#1c2340;--tx:#eef1ff;--mu:#a0abcc;--bd:#2d3659;--pr:#8b7fff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:12px}
+.hero{background:linear-gradient(135deg,#5b4bdb,#8a5cf6 60%,#ff8a3d);color:#fff;border-radius:18px;padding:22px;text-align:center;margin-bottom:12px}
+.hero h1{margin:.2em 0;font-size:1.4rem}
+.hud{display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:6px;gap:8px;flex-wrap:wrap}
+.bar{height:10px;background:var(--bd);border-radius:8px;overflow:hidden;margin-bottom:8px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pr),var(--ac));transition:width .3s}
+#tb{background:var(--ok)}
+.btn{background:var(--pr);color:#fff;border:0;border-radius:12px;padding:11px 18px;font-size:1rem;cursor:pointer;margin:4px 4px 4px 0}
+.btn.alt{background:var(--ac)}.btn.ghost{background:none;color:var(--pr);border:2px solid var(--pr)}.btn:disabled{opacity:.5}
+.opt{display:block;width:100%;text-align:left;background:var(--bg);color:var(--tx);border:2px solid var(--bd);border-radius:12px;padding:11px 13px;margin:7px 0;font-size:1rem;cursor:pointer}
+.opt.sel{border-color:var(--pr);background:#5b4bdb22}.opt.ok{border-color:var(--ok);background:#16a34a22}.opt.no{border-color:var(--no);background:#dc262622}
+input{padding:10px;border:2px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}input.n{width:110px;text-align:center}
+table{border-collapse:collapse;width:100%;text-align:center;margin:8px 0}td,th{border:1px solid var(--bd);padding:8px}th{background:var(--bg)}
+.fb{margin-top:8px;padding:10px;border-radius:10px;background:var(--bg);border-left:4px solid var(--pr)}.fb.ok{border-color:var(--ok)}.fb.no{border-color:var(--no)}
+.zone{display:inline-block;background:var(--pr);color:#fff;border-radius:8px;padding:2px 10px;font-size:.8rem}
+.big{font-size:3rem;font-weight:800;color:var(--pr);line-height:1}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.1)}100%{transform:scale(1)}}.pop{animation:pop .4s}
+@media print{.noprint{display:none}body{background:#fff}}
+</style></head><body><main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),rnd=a=>a[Math.floor(Math.random()*a.length)],shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+const val=s=>{s=String(s==null?'':s).replace(',','.').trim();if(s.includes('/')){const[a,b]=s.split('/');return a/b}return parseFloat(s)};
+const near=(a,b)=>Math.abs(a-b)<0.01;
+const ZN=['🌲 Hutan Konsep','⛰️ Lembah Hitung','🏙️ Kota Logika','🐉 Gua Boss'];
+const IND={k:'Pemahaman Konsep',h:'Keterampilan Menghitung',m:'Pemecahan Masalah'};
+const TIPS={k:'Ulangi ciri berbalik nilai: satu naik, yang lain turun, dan hasil kali tetap.',h:'Latih rumus x₁ × y₁ = x₂ × y₂: cari hasil kali tetap dulu, lalu bagi.',m:'Pada soal cerita, tulis dulu total pekerjaan (hasil kali), lalu hitung sisanya langkah demi langkah.'};
+let G={name:'',best:0};try{G.best=+localStorage.getItem('bestBN')||0}catch(e){}
+const divs=(k,lo,hi)=>{const r=[];for(let i=lo;i<=hi;i++)if(k%i==0)r.push(i);return r};
+
+function build(){const Q=[];
+const a=rnd([{c:'Kecepatan kendaraan dan waktu tempuh (jarak tetap)',w:['Banyak buku dan harga totalnya','Banyak bensin dan jarak tempuh','Tinggi badan dan usia']},{c:'Banyak pekerja dan lama menyelesaikan pekerjaan yang sama',w:['Banyak pensil dan uang yang dibayar','Banyak porsi dan banyak beras','Panjang kain dan harga kain']},{c:'Jumlah keran dan waktu mengisi bak yang sama',w:['Jumlah roti dan harga total','Berat beras dan harga beras','Jumlah buku dan tebal tumpukan']}]);
+Q.push({z:0,ind:'k',t:'mc',time:45,q:'Manakah pasangan besaran yang berbalik nilai?',opts:shuf([a.c,...a.w]),ans:a.c,ex:`Pada berbalik nilai, jika satu besaran naik maka yang lain turun dan hasil kalinya tetap. Jawaban: ${a.c}.`,hint:'Tanyakan: jika yang satu bertambah, yang lain bertambah atau berkurang?'});
+const b=rnd([['Banyak anak dan jatah permen tiap anak (total permen tetap)','Berbalik nilai'],['Banyak buku tulis dan harga yang dibayar','Berbanding lurus'],['Jumlah mesin fotokopi dan waktu menyelesaikan 500 lembar','Berbalik nilai'],['Jumlah liter bensin dan jarak yang ditempuh','Berbanding lurus']]);
+Q.push({z:0,ind:'k',t:'mc',time:45,q:`Pernyataan: “${b[0]}”. Jenis hubungannya adalah…`,opts:['Berbanding lurus','Berbalik nilai'],ans:b[1],ex:b[1]=='Berbalik nilai'?'Satu naik, yang lain turun; hasil kali tetap.':'Keduanya naik bersama; hasil bagi tetap.',hint:'Lurus: ikut naik. Berbalik: satu naik, satunya turun.'});
+const f=rnd([2,3,4,5]);
+Q.push({z:0,ind:'k',t:'mc',time:45,q:`Pada perbandingan berbalik nilai, jika x menjadi ${f} kali semula, maka y menjadi…`,opts:shuf([`1/${f} kali semula`,`${f} kali semula`,`${f+1} kali semula`,'tetap']),ans:`1/${f} kali semula`,ex:`Karena x × y tetap, x menjadi ${f} kali ➜ y menjadi 1/${f} kali.`,hint:'Hasil kali x × y harus tetap.'});
+{const [p,h]=rnd([[4,15],[6,12],[8,9],[10,12],[12,10],[9,8]]),k=p*h,q=rnd(divs(k,p+1,30));
+Q.push({z:1,ind:'h',t:'num',time:90,u:'hari',q:`${p} pekerja menyelesaikan pembangunan pos ronda dalam ${h} hari. Jika dikerjakan ${q} pekerja (kemampuan sama), berapa hari pekerjaan selesai?`,ans:k/q,ex:`${p} × ${h} = ${k}; ${k} ÷ ${q} = ${k/q} hari.`,hint:'Hitung dulu hasil kali tetap: pekerja × hari.'})}
+{const [v,t]=rnd([[40,3],[60,4],[30,6],[45,4],[50,6]]),k=v*t,w=rnd(divs(k,20,120).filter(x=>x!=v));
+Q.push({z:1,ind:'h',t:'num',time:90,u:'jam',q:`Sebuah bus melaju ${v} km/jam dan tiba dalam ${t} jam. Jika bus melaju ${w} km/jam, berapa jam waktu tempuhnya?`,ans:k/w,ex:`Jarak tetap: ${v} × ${t} = ${k}; ${k} ÷ ${w} = ${k/w} jam.`,hint:'Jarak sama, jadi kecepatan × waktu tetap.'})}
+{const k=rnd([24,36,48,60]),xs=shuf(divs(k,2,12).filter(x=>[2,3,4,6,8,12].includes(x))).slice(0,3);
+Q.push({z:1,ind:'h',t:'num',time:90,u:'',q:`Tabel berikut berbalik nilai. Tentukan nilai y yang hilang.<table><tr><th>x</th><td>${xs[0]}</td><td>${xs[1]}</td><td>${xs[2]}</td></tr><tr><th>y</th><td>${k/xs[0]}</td><td>${k/xs[1]}</td><td><b>?</b></td></tr></table>`,ans:k/xs[2],ex:`${xs[0]} × ${k/xs[0]} = ${k}; y = ${k} ÷ ${xs[2]} = ${k/xs[2]}.`,hint:'Cari hasil kali x × y dari kolom yang lengkap.'})}
+Q.push({z:2,ind:'m',t:'mc',time:60,q:'Dimas mengerjakan: “6 pekerja selesai 12 hari. Jika 9 pekerja, berapa hari?” Ia menulis 6/9 = 12/y sehingga y = 18 hari. Kesalahan Dimas adalah…',opts:shuf(['Memakai perbandingan senilai; seharusnya 6 × 12 = 9 × y sehingga y = 8 hari','Perhitungannya sudah benar karena pekerja bertambah','Seharusnya 6 + 12 = 9 + y','Seharusnya 12 ÷ 6 × 9 = 18, hanya salah tulis']),ans:'Memakai perbandingan senilai; seharusnya 6 × 12 = 9 × y sehingga y = 8 hari',ex:'Pekerja bertambah ➜ hari berkurang (berbalik nilai). 72 ÷ 9 = 8 hari, bukan 18.',hint:'Apakah hasil 18 hari masuk akal jika pekerjanya bertambah?'});
+Q.push({z:2,ind:'k',t:'mc',time:60,q:'Tabel manakah yang menunjukkan perbandingan berbalik nilai?',opts:shuf(['x: 2, 4, 8 dan y: 12, 6, 3','x: 2, 4, 8 dan y: 3, 6, 12','x: 1, 2, 3 dan y: 5, 6, 7','x: 3, 6, 9 dan y: 9, 18, 27']),ans:'x: 2, 4, 8 dan y: 12, 6, 3',ex:'2×12 = 4×6 = 8×3 = 24 (hasil kali tetap). Opsi lain: hasil bagi tetap (lurus) atau tidak ada pola tetap.',hint:'Hitung x × y pada setiap pasangan.'});
+{const [n,d,s,m]=rnd([[10,24,6,5],[12,15,5,8],[8,20,4,8],[6,30,10,6]]),tot=n*d,sis=tot-n*s,ans=sis/(n+m);
+Q.push({z:2,ind:'m',t:'num',time:120,u:'hari',q:`Persediaan makanan ${n} ekor ayam cukup untuk ${d} hari. Setelah ${s} hari, ditambah ${m} ekor ayam lagi. Berapa hari lagi persediaan yang tersisa akan cukup?`,ans,ex:`Total ${n}×${d} = ${tot}; terpakai ${n}×${s} = ${n*s}; sisa ${sis}; ayam kini ${n+m} ➜ ${sis} ÷ ${n+m} = ${ans} hari.`,hint:'Hitung total persediaan, kurangi yang sudah terpakai, baru bagi dengan jumlah ayam baru.'})}
+{const [p,h]=rnd([[12,30],[18,20],[24,15]]);
+Q.push({z:3,ind:'m',t:'boss',time:180,q:`<b>BOSS!</b> ${p} relawan membungkus bantuan bencana selama ${h} hari. Semua relawan bekerja dengan kecepatan sama.`,parts:[{l:'a) Hasil kali tetap (relawan × hari) =',ans:360},{l:'b) Jika 30 relawan, selesai dalam … hari',ans:12},{l:'c) Agar selesai dalam 9 hari, dibutuhkan … relawan',ans:40}],ex:`a) ${p}×${h} = 360. b) 360 ÷ 30 = 12 hari. c) 360 ÷ 9 = 40 relawan.`,hint:'Hitung total dulu: relawan × hari. Lalu bagi dengan nilai yang diketahui.'})}
+return Q}
+
+function home(){G.Q=null;$('#app').innerHTML=`<div class="hero"><div style="font-size:3rem">🦸‍♂️🏙️🐉</div><h1>Misi Penyelamat Kota</h1><p>Asesmen Akhir • Perbandingan Berbalik Nilai • Matematika Kelas 7</p></div>
+<div class="card"><p>Kota Matematika kacau! Hanya pahlawan yang menguasai <b>perbandingan berbalik nilai</b> yang bisa menyelamatkannya. Lewati <b>3 zona</b> dan kalahkan <b>Boss</b>.</p>
+<ul><li>10 tantangan (12 butir penilaian), angka soal <b>diacak</b> untuk tiap pemain.</li><li>❤️ 3 nyawa, ⏱️ waktu terbatas, 💡 2 kristal petunjuk (mengurangi poin).</li><li><b>Nilai</b> dihitung dari jawaban benar; nyawa &amp; poin hanya bonus.</li></ul>
+${G.best?`<p>🏅 Nilai terbaikmu: <b>${G.best}</b></p>`:''}
+<p>Nama pahlawan:</p><input id="nm" style="width:100%" placeholder="Tulis namamu" value="${G.name}"><p><button class="btn alt" onclick="start()">Mulai Misi 🚀</button></p></div>`}
+function start(){const n=$('#nm').value.trim();if(!n){$('#nm').focus();return}Object.assign(G,{name:n,Q:build(),i:0,res:[],hp:3,pts:0,streak:0,hints:2});show()}
+
+function show(){const q=G.Q[G.i];G.done=false;G.sel=null;G.hu=false;G.t0=Date.now();
+let body='';
+if(q.t=='mc')body=q.opts.map((o,j)=>`<button class="opt" onclick="pick(${j},this)">${'ABCD'[j]}. ${o}</button>`).join('');
+else if(q.t=='num')body=`<p>Jawabanmu: <input class="n" id="an" inputmode="decimal" placeholder="…"> ${q.u}</p>`;
+else body=q.parts.map((p,j)=>`<p>${p.l} <input class="n" id="b${j}" inputmode="decimal"></p>`).join('');
+$('#app').innerHTML=`<div class="hud"><span class="zone">${ZN[q.z]}</span><span>Soal ${G.i+1}/${G.Q.length}</span><span>${'❤️'.repeat(G.hp)}${'🖤'.repeat(3-G.hp)}</span><span>⭐ ${G.pts}</span></div>
+<div class="bar"><i style="width:${G.i/G.Q.length*100}%"></i></div>
+<div class="card"><div class="bar"><i id="tb" style="width:100%"></i></div><small id="tl"></small>
+<p style="font-size:1.1rem">${q.q}</p>${body}<div id="hn"></div>
+<p id="ctl"><button class="btn" onclick="submit()">Jawab ✔</button><button class="btn ghost" id="hb" onclick="hint()">💡 Petunjuk (${G.hints})</button></p><div id="fb"></div></div>`;
+clearInterval(G.iv);G.iv=setInterval(()=>{const r=Math.max(0,q.time-(Date.now()-G.t0)/1000);const tb=$('#tb');if(!tb)return;tb.style.width=r/q.time*100+'%';$('#tl').textContent='⏱️ '+Math.ceil(r)+' dtk';if(r<=0)submit(true)},250)}
+function pick(j,b){if(G.done)return;G.sel=G.Q[G.i].opts[j];document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')}
+function hint(){const q=G.Q[G.i];if(G.done||G.hu||G.hints<1)return;G.hu=true;G.hints--;$('#hn').innerHTML=`<div class="fb pop">💡 ${q.hint}</div>`;$('#hb').disabled=true;$('#hb').textContent='💡 Petunjuk dipakai'}
+function submit(to){if(G.done)return;G.done=true;clearInterval(G.iv);const q=G.Q[G.i],rem=Math.max(0,q.time-(Date.now()-G.t0)/1000);let items,user;
+if(q.t=='mc'){items=[G.sel===q.ans];user=G.sel||'(tidak menjawab)'}
+else if(q.t=='num'){const v=val($('#an').value);items=[near(v,q.ans)];user=isNaN(v)?'(kosong)':v}
+else{items=q.parts.map((p,j)=>near(val($('#b'+j).value),p.ans));user=q.parts.map((p,j)=>$('#b'+j).value||'-').join(' / ')}
+const nc=items.filter(Boolean).length,all=nc==items.length;let gain=nc*10;
+if(q.t!='boss'&&all)gain+=Math.round(rem/q.time*5);
+if(all){G.streak++;if(G.streak>=3)gain+=5}else{G.streak=0;G.hp=Math.max(0,G.hp-1)}
+if(G.hu)gain=Math.max(0,gain-3);G.pts+=gain;
+G.res.push({q,items,user});
+if(q.t=='mc')document.querySelectorAll('.opt').forEach(x=>{const t=x.textContent.slice(3);if(t===q.ans)x.classList.add('ok');else if(t===G.sel)x.classList.add('no');x.disabled=true});
+const last=G.i==G.Q.length-1;
+$('#ctl').style.display='none';
+$('#fb').innerHTML=`<div class="fb ${all?'ok':'no'} pop"><b>${to?'⏰ Waktu habis! ':''}${all?'✅ Hebat! +'+gain+' poin':nc?'🟡 Sebagian benar ('+nc+'/'+items.length+') +'+gain+' poin':'❌ Belum tepat'}</b><br>${q.ex}</div><button class="btn alt" onclick="${last?'finish()':'G.i++;show()'}">${last?'Lihat Hasil 🏆':'Lanjut ➜'}</button>`}
+
+function finish(){const R=G.res,tot=R.reduce((a,r)=>a+r.items.length,0),ok=R.reduce((a,r)=>a+r.items.filter(Boolean).length,0),nilai=Math.round(ok/tot*100),bonus=G.hp*10,P=G.pts+bonus;
+const st={};R.forEach(r=>{const s=st[r.q.ind]=st[r.q.ind]||[0,0];s[0]+=r.items.filter(Boolean).length;s[1]+=r.items.length});
+const title=nilai>=85?['👑','Legenda Berbalik Nilai']:nilai>=70?['🦸','Pahlawan Kota']:nilai>=55?['🧭','Petualang Tangguh']:['🌱','Calon Pahlawan'];
+G.out={nilai,ok,tot,P,bonus,st};if(nilai>G.best){G.best=nilai;try{localStorage.setItem('bestBN',nilai)}catch(e){}}
+const weak=Object.keys(st).filter(k=>st[k][0]/st[k][1]<.75);
+$('#app').innerHTML=`<div class="hero pop"><div style="font-size:3.5rem">${title[0]}</div><h1>${title[1]}</h1><p>${G.name.replace(/</g,'&lt;')}</p></div>
+<div class="card" style="text-align:center"><div class="grid"><div><div class="big">${nilai}</div>Nilai (0–100)</div><div><div class="big">${ok}/${tot}</div>Butir benar</div><div><div class="big">${P}</div>Poin game</div></div>
+<p>Status: <b style="color:var(${nilai>=75?'--ok':'--no'})">${nilai>=75?'✅ Tuntas':'🔁 Perlu pengayaan/remedial'}</b> (batas 75) • Bonus nyawa +${bonus}</p></div>
+<div class="card"><h3>📊 Penguasaan per Indikator</h3>${Object.keys(st).map(k=>{const p=Math.round(st[k][0]/st[k][1]*100);return `<p>${IND[k]}: <b>${p}%</b> (${st[k][0]}/${st[k][1]})</p><div class="bar"><i style="width:${p}%"></i></div>`}).join('')}
+<p><b>💬 Saran:</b> ${weak.length?weak.map(k=>`<br>• <i>${IND[k]}:</i> ${TIPS[k]}`).join(''):'Semua indikator sudah kuat. Pertahankan dan tantang temanmu!'}</p></div>
+<div class="card"><h3>📝 Pembahasan</h3>${R.map((r,i)=>`<div class="fb ${r.items.every(Boolean)?'ok':'no'}"><b>${i+1}. ${r.items.every(Boolean)?'✅':r.items.some(Boolean)?'🟡':'❌'} ${ZN[r.q.z]}</b><br>${r.q.q}<br><small>Jawabanmu: <b>${r.user}</b></small><br>${r.q.ex}</div>`).join('')}</div>
+<p class="noprint"><button class="btn alt" onclick="start2()">🔄 Main Lagi (soal baru)</button><button class="btn ghost" onclick="saveRes()">📄 Unduh Hasil (PDF)</button><button class="btn ghost" onclick="home()">🏠 Beranda</button></p><div id="sv" class="noprint"></div>`;window.scrollTo(0,0)}
+function start2(){Object.assign(G,{Q:build(),i:0,res:[],hp:3,pts:0,streak:0,hints:2});show()}
+const esc=t=>String(t==null?'':t).replace(/</g,'&lt;');
+const cl=t=>String(t==null?'':t).replace(/<[^>]*>/g,' ').replace(/×/g,'x').replace(/÷/g,':').replace(/₁/g,'1').replace(/₂/g,'2').replace(/[➜→]/g,'->').replace(/[^\x0A\x20-\x7E\u00A0-\u00FF]/g,'').replace(/ {2,}/g,' ').trim();
+function sumTxt(){const o=G.out,R=G.res;let t='LAPORAN ASESMEN - Perbandingan Berbalik Nilai (Kelas 7)\nNama: '+G.name+'\nTanggal: '+new Date().toLocaleString('id-ID')+'\nNilai: '+o.nilai+' ('+(o.nilai>=75?'Tuntas':'Perlu pengayaan/remedial')+')\nButir benar: '+o.ok+'/'+o.tot+' | Poin game: '+o.P+'\n\nPenguasaan indikator:\n';
+Object.keys(o.st).forEach(k=>t+='- '+IND[k]+': '+Math.round(o.st[k][0]/o.st[k][1]*100)+'% ('+o.st[k][0]+'/'+o.st[k][1]+')\n');
+t+='\nPembahasan:\n';R.forEach((r,i)=>t+=(i+1)+'. ['+(r.items.every(Boolean)?'Benar':r.items.some(Boolean)?'Sebagian':'Salah')+'] '+cl(r.q.q)+'\n   Jawaban siswa: '+cl(r.user)+'\n   '+cl(r.q.ex)+'\n');return t}
+async function saveRes(){const sv=$('#sv'),J=window.jspdf&&window.jspdf.jsPDF;
+if(J){try{const d=new J({unit:'mm',format:'a4'});let y=18;d.setFont('helvetica','normal');d.setFontSize(10);
+cl(sumTxt()).split('\n').forEach(ln=>{d.splitTextToSize(ln||' ',180).forEach(l=>{if(y>284){d.addPage();y=16}d.text(l,15,y);y+=5})});
+const dl=window.claude&&await claude.use('downloads');
+if(dl){await dl.save({filename:'hasil-asesmen-'+(G.name||'siswa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf',data:d.output('blob')});sv.innerHTML='<div class="fb ok">✅ PDF berhasil disimpan.</div>';return}}catch(e){if(e&&e.code=='declined'){sv.innerHTML='';return}}}
+sv.innerHTML='<div class="fb no">Unduhan PDF tidak tersedia di tampilan ini. Salin ringkasan di bawah (lalu tempel ke dokumen/chat guru), atau buka tautan game di tab browser baru dan tekan Ctrl+P.</div><textarea id="sx" rows="10" readonly style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:2px solid var(--bd);background:var(--bg);color:var(--tx);font:12px monospace">'+esc(sumTxt())+'</textarea><button class="btn" onclick="cp()">📋 Salin Ringkasan</button>'}
+function cp(){const t=$('#sx');t.select();const ok=()=>$('#sv').insertAdjacentHTML('beforeend','<div class="fb ok">Tersalin ✅</div>');try{navigator.clipboard.writeText(t.value).then(ok,()=>{document.execCommand('copy');ok()})}catch(e){document.execCommand('copy');ok()}}
+home();
+</script></body></html>
