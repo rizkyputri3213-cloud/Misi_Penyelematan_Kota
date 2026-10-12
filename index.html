@@ -112,12 +112,39 @@ const cl=t=>String(t==null?'':t).replace(/<[^>]*>/g,' ').replace(/×/g,'x').repl
 function sumTxt(){const o=G.out,R=G.res;let t='LAPORAN ASESMEN - Perbandingan Berbalik Nilai (Kelas 7)\nNama: '+G.name+'\nTanggal: '+new Date().toLocaleString('id-ID')+'\nNilai: '+o.nilai+' ('+(o.nilai>=75?'Tuntas':'Perlu pengayaan/remedial')+')\nButir benar: '+o.ok+'/'+o.tot+' | Poin game: '+o.P+'\n\nPenguasaan indikator:\n';
 Object.keys(o.st).forEach(k=>t+='- '+IND[k]+': '+Math.round(o.st[k][0]/o.st[k][1]*100)+'% ('+o.st[k][0]+'/'+o.st[k][1]+')\n');
 t+='\nPembahasan:\n';R.forEach((r,i)=>t+=(i+1)+'. ['+(r.items.every(Boolean)?'Benar':r.items.some(Boolean)?'Sebagian':'Salah')+'] '+cl(r.q.q)+'\n   Jawaban siswa: '+cl(r.user)+'\n   '+cl(r.q.ex)+'\n');return t}
-async function saveRes(){const sv=$('#sv'),J=window.jspdf&&window.jspdf.jsPDF;
+async function saveResOld(){const sv=$('#sv'),J=window.jspdf&&window.jspdf.jsPDF;
 if(J){try{const d=new J({unit:'mm',format:'a4'});let y=18;d.setFont('helvetica','normal');d.setFontSize(10);
 cl(sumTxt()).split('\n').forEach(ln=>{d.splitTextToSize(ln||' ',180).forEach(l=>{if(y>284){d.addPage();y=16}d.text(l,15,y);y+=5})});
 const dl=window.claude&&await claude.use('downloads');
 if(dl){await dl.save({filename:'hasil-asesmen-'+(G.name||'siswa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf',data:d.output('blob')});sv.innerHTML='<div class="fb ok">✅ PDF berhasil disimpan.</div>';return}}catch(e){if(e&&e.code=='declined'){sv.innerHTML='';return}}}
 sv.innerHTML='<div class="fb no">Unduhan PDF tidak tersedia di tampilan ini. Salin ringkasan di bawah (lalu tempel ke dokumen/chat guru), atau buka tautan game di tab browser baru dan tekan Ctrl+P.</div><textarea id="sx" rows="10" readonly style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:2px solid var(--bd);background:var(--bg);color:var(--tx);font:12px monospace">'+esc(sumTxt())+'</textarea><button class="btn" onclick="cp()">📋 Salin Ringkasan</button>'}
 function cp(){const t=$('#sx');t.select();const ok=()=>$('#sv').insertAdjacentHTML('beforeend','<div class="fb ok">Tersalin ✅</div>');try{navigator.clipboard.writeText(t.value).then(ok,()=>{document.execCommand('copy');ok()})}catch(e){document.execCommand('copy');ok()}}
+function resImg(){const o=G.out,R=G.res,W=900,P=36,MW=W-2*P,cv=document.createElement('canvas'),x=cv.getContext('2d');
+const tg=s=>String(s==null?'':s).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+const wr=(t,f)=>{x.font=f;const out=[];let l='';tg(t).split(' ').forEach(w=>{const n=l?l+' '+w:w;if(x.measureText(n).width>MW&&l){out.push(l);l=w}else l=n});if(l)out.push(l);return out};
+const it=[],add=(t,f,c,g)=>wr(t,f).forEach(l=>it.push([l,f,c||'#1d2740',g||0]));
+add('Hasil Asesmen: Misi Penyelamat Kota','bold 30px sans-serif','#2A2370',10);
+add('Nama: '+G.name+'  |  '+new Date().toLocaleDateString('id-ID'),'20px sans-serif');
+add('Nilai: '+o.nilai+' ('+(o.nilai>=75?'Tuntas':'Perlu pengayaan/remedial')+')','bold 26px sans-serif',o.nilai>=75?'#16a34a':'#dc2626',6);
+add('Butir benar '+o.ok+'/'+o.tot+'  |  Poin game '+o.P,'20px sans-serif','#1d2740',12);
+Object.keys(o.st).forEach(k=>add('• '+IND[k]+': '+Math.round(o.st[k][0]/o.st[k][1]*100)+'% ('+o.st[k][0]+'/'+o.st[k][1]+')','20px sans-serif'));
+add('Pembahasan singkat','bold 22px sans-serif','#5B4BDB',8);
+R.forEach((r,i)=>{const s=r.items.every(Boolean)?'Benar':r.items.some(Boolean)?'Sebagian':'Salah';add((i+1)+'. ['+s+'] '+tg(r.q.q).slice(0,150),'17px sans-serif');add('Jawabanmu: '+tg(r.user).slice(0,80),'italic 16px sans-serif','#5d6b8a',6)});
+const lh=f=>Math.round(parseInt(f.match(/(\d+)px/)[1])*1.4);
+let H=2*P;it.forEach(i=>H+=lh(i[1])+i[3]);cv.width=W;cv.height=H;
+x.fillStyle='#ffffff';x.fillRect(0,0,W,H);x.fillStyle='#5b4bdb';x.fillRect(0,0,W,10);x.textBaseline='top';
+let y=P;it.forEach(i=>{x.font=i[1];x.fillStyle=i[2];x.fillText(i[0],P,y);y+=lh(i[1])+i[3]});
+return cv.toDataURL('image/png')}
+async function saveRes(){const sv=$('#sv');let why='';
+sv.innerHTML=`<div class='fb'>⏳ Menyiapkan PDF…</div>`;
+try{const J=window.jspdf&&window.jspdf.jsPDF;if(!J)throw {code:'pustaka PDF gagal dimuat'};
+const d=new J({unit:'mm',format:'a4'});let y=18;d.setFont('helvetica','normal');d.setFontSize(10);
+cl(sumTxt()).split('\n').forEach(ln=>{d.splitTextToSize(ln||' ',180).forEach(l=>{if(y>284){d.addPage();y=16}d.text(l,15,y);y+=5})});
+const dl=window.claude&&await window.claude.use('downloads');if(!dl)throw {code:'fitur unduh belum aktif di tampilan ini'};
+await dl.save({filename:'hasil-asesmen-'+(G.name||'siswa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf',data:d.output('blob')});
+sv.innerHTML=`<div class='fb ok'>✅ PDF berhasil disimpan.</div>`;return
+}catch(e){if(e&&e.code=='declined'){sv.innerHTML='';return}why=(e&&(e.code||e.message))||String(e)}
+let url='';try{url=resImg()}catch(e){}
+sv.innerHTML=`<div class='fb no'>Unduhan PDF langsung belum bisa di tampilan ini (${esc(why)}). Simpan hasilmu sebagai gambar: <b>tekan lama</b> gambar di bawah (HP) atau <b>klik kanan ➜ Simpan gambar</b> (komputer). Untuk PDF, buka tautan game langsung di tab browser atau aplikasi Claude, lalu pilih setuju saat diminta izin unduh.</div>`+(url?`<img alt='Hasil asesmen' src='${url}' style='width:100%;border:1px solid var(--bd);border-radius:12px;margin-top:8px'>`:'')}
 home();
 </script></body></html>
